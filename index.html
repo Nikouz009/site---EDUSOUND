@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduSound — Monitoramento Acústico nas Salas de Aula</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'es-black': '#070a0d',
+            'es-surface': '#0d1117',
+            'es-card': '#111820',
+            'es-border': '#1e2a38',
+            'es-green': '#22c55e',
+            'es-green-dim': '#16a34a',
+            'es-yellow': '#eab308',
+            'es-yellow-dim': '#ca8a04',
+            'es-red': '#ef4444',
+            'es-red-dim': '#dc2626',
+            'es-text': '#e2eaf4',
+            'es-muted': '#6b7f96',
+          },
+          fontFamily: {
+            display: ['Syne', 'sans-serif'],
+            body: ['DM Sans', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background-color: #070a0d;
+      color: #e2eaf4;
+      font-family: 'DM Sans', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* ─── Noise texture overlay ─── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    /* ─── Scrollbar ─── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #070a0d; }
+    ::-webkit-scrollbar-thumb { background: #1e2a38; border-radius: 2px; }
+
+    /* ─── Nav ─── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(7, 10, 13, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(30,42,56,0.6);
+    }
+    .nav-link {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: #6b7f96;
+      transition: color 0.2s;
+      text-transform: uppercase;
+    }
+    .nav-link:hover { color: #22c55e; }
+    .nav-active { color: #e2eaf4 !important; }
+
+    /* ─── LED Badge ─── */
+    .led-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid currentColor;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .led-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      animation: pulse-led 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse-led {
+      0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 currentColor; }
+      50% { opacity: 0.7; transform: scale(1.15); box-shadow: 0 0 8px 3px currentColor; }
+    }
+
+    /* ─── Hero gradient mesh ─── */
+    .hero-mesh {
+      position: absolute; inset: 0; overflow: hidden; z-index: 0;
+    }
+    .mesh-blob {
+      position: absolute; border-radius: 50%;
+      filter: blur(90px); opacity: 0.18;
+    }
+
+    /* ─── Waveform bars ─── */
+    .waveform {
+      display: flex; align-items: center; gap: 3px;
+      height: 48px;
+    }
+    .wave-bar {
+      width: 4px; border-radius: 2px;
+      animation: wave-anim var(--dur, 1s) ease-in-out infinite alternate;
+      transform-origin: bottom;
+    }
+    @keyframes wave-anim {
+      from { transform: scaleY(0.15); }
+      to   { transform: scaleY(1); }
+    }
+
+    /* ─── Decibel meter ─── */
+    .db-meter-track {
+      width: 100%; height: 10px; border-radius: 5px;
+      background: #1e2a38; overflow: hidden;
+    }
+    .db-meter-fill {
+      height: 100%; border-radius: 5px;
+      transition: width 2s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    /* ─── Cards ─── */
+    .glass-card {
+      background: rgba(17, 24, 32, 0.8);
+      border: 1px solid #1e2a38;
+      border-radius: 16px;
+      backdrop-filter: blur(8px);
+      transition: border-color 0.3s, transform 0.3s;
+    }
+    .glass-card:hover { border-color: #22c55e33; transform: translateY(-4px); }
+
+    .stat-card {
+      background: #0d1117;
+      border: 1px solid #1e2a38;
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    /* ─── Section fade-in ─── */
+    .fade-in {
+      opacity: 0; transform: translateY(28px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+    /* ─── Traffic light signal ─── */
+    .traffic-light {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 10px; padding: 20px 16px;
+      background: #0d1117; border: 1px solid #1e2a38;
+      border-radius: 24px; width: 64px;
+    }
+    .tl-light {
+      width: 32px; height: 32px; border-radius: 50%;
+      opacity: 0.2; transition: opacity 0.4s, box-shadow 0.4s;
+    }
+    .tl-light.on { opacity: 1; }
+    .tl-red.on    { background: #ef4444; box-shadow: 0 0 20px 4px #ef444480; }
+    .tl-yellow.on { background: #eab308; box-shadow: 0 0 20px 4px #eab30880; }
+    .tl-green.on  { background: #22c55e; box-shadow: 0 0 20px 4px #22c55e80; }
+
+    /* ─── Divider ─── */
+    .section-divider {
+      width: 48px; height: 3px; border-radius: 2px;
+      background: linear-gradient(90deg, #22c55e, #22c55e00);
+    }
+
+    /* ─── Tag ─── */
+    .tag {
+      display: inline-block;
+      padding: 3px 10px; border-radius: 999px;
+      font-size: 0.7rem; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      font-family: 'Syne', sans-serif;
+    }
+
+    /* ─── Problem card accent ─── */
+    .problem-card { position: relative; overflow: hidden; }
+    .problem-card::before {
+      content: ''; position: absolute; top: 0; left: 0;
+      width: 3px; height: 100%;
+    }
+    .accent-red::before  { background: #ef4444; }
+    .accent-yellow::before { background: #eab308; }
+    .accent-green::before { background: #22c55e; }
+
+    /* ─── CTA button ─── */
+    .cta-btn {
+      position: relative; overflow: hidden;
+      background: #22c55e; color: #070a0d;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 0.85rem;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 14px 32px; border-radius: 8px;
+      border: none; cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px #22c55e40;
+    }
+    .cta-btn::after {
+      content: ''; position: absolute;
+      top: 50%; left: 50%; width: 0; height: 0;
+      background: rgba(255,255,255,0.15); border-radius: 50%;
+      transform: translate(-50%,-50%);
+      transition: width 0.4s, height 0.4s, opacity 0.4s;
+    }
+    .cta-btn:active::after { width: 300px; height: 300px; opacity: 0; }
+
+    .cta-outline {
+      background: transparent;
+      border: 1px solid #1e2a38; color: #e2eaf4;
+      font-family: 'Syne', sans-serif; font-weight: 600;
+      font-size: 0.85rem; letter-spacing: 0.06em;
+      text-transform: uppercase; padding: 14px 32px;
+      border-radius: 8px; cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      text-decoration: none; display: inline-block;
+    }
+    .cta-outline:hover { border-color: #22c55e; color: #22c55e; }
+
+    /* ─── Horizontal scroll chips ─── */
+    .chips-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip {
+      padding: 6px 14px; border-radius: 999px;
+      border: 1px solid #1e2a38;
+      font-size: 0.78rem; color: #6b7f96;
+      font-family: 'Syne', sans-serif; font-weight: 600;
+      letter-spacing: 0.04em;
+      transition: border-color 0.2s, color 0.2s;
+      white-space: nowrap;
+    }
+    .chip:hover { border-color: #22c55e; color: #22c55e; }
+
+    /* number counter */
+    .big-number {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: clamp(3rem, 7vw, 5.5rem);
+      line-height: 1;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════ NAV ════════════════════════════ -->
+<nav>
+  <div class="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
+    <a href="index.html" class="flex items-center gap-2" style="text-decoration:none">
+      <div class="waveform" style="height:22px">
+        <div class="wave-bar" style="background:#22c55e;height:22px;--dur:0.7s"></div>
+        <div class="wave-bar" style="background:#22c55e;height:22px;--dur:0.9s"></div>
+        <div class="wave-bar" style="background:#eab308;height:22px;--dur:0.6s"></div>
+        <div class="wave-bar" style="background:#ef4444;height:22px;--dur:1.1s"></div>
+        <div class="wave-bar" style="background:#22c55e;height:22px;--dur:0.8s"></div>
+      </div>
+      <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:#e2eaf4;letter-spacing:-0.02em">Edu<span style="color:#22c55e">Sound</span></span>
+    </a>
+    <div class="hidden md:flex items-center gap-8">
+      <a href="index.html" class="nav-link nav-active">Home</a>
+      <a href="tecnologia.html" class="nav-link">Tecnologia</a>
+      <a href="resultados.html" class="nav-link">Resultados</a>
+      <a href="equipe.html" class="nav-link">Equipe</a>
+    </div>
+    <div class="led-badge" style="color:#22c55e;font-size:0.7rem">
+      <span class="led-dot" style="background:#22c55e;color:#22c55e"></span>
+      ESP32 Ativo
+    </div>
+  </div>
+</nav>
+
+<!-- ════════════════════════════ HERO ════════════════════════════ -->
+<section id="hero" style="position:relative;min-height:100vh;display:flex;align-items:center;padding-top:80px;overflow:hidden;">
+
+  <!-- Gradient blobs -->
+  <div class="hero-mesh">
+    <div class="mesh-blob" style="width:600px;height:600px;background:#22c55e;top:-100px;right:-100px;opacity:0.12"></div>
+    <div class="mesh-blob" style="width:400px;height:400px;background:#ef4444;bottom:-80px;left:-80px;opacity:0.10"></div>
+    <div class="mesh-blob" style="width:300px;height:300px;background:#eab308;top:40%;left:40%;opacity:0.07"></div>
+  </div>
+
+  <!-- Grid lines -->
+  <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(30,42,56,0.3) 1px,transparent 1px),linear-gradient(90deg,rgba(30,42,56,0.3) 1px,transparent 1px);background-size:60px 60px;z-index:0"></div>
+
+  <div class="max-w-7xl mx-auto px-6 w-full" style="position:relative;z-index:1">
+    <div class="grid lg:grid-cols-2 gap-16 items-center">
+
+      <!-- Left: Text -->
+      <div class="fade-in visible" style="transition-delay:0.1s">
+        <div class="chips-row mb-6">
+          <span class="chip">Pesquisa Acadêmica</span>
+          <span class="chip">ESP32</span>
+          <span class="chip">Sensor Acústico</span>
+        </div>
+
+        <h1 style="font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(2.4rem,5.5vw,4.2rem);line-height:1.05;letter-spacing:-0.03em;color:#e2eaf4">
+          O ruído que você <br/>
+          <span style="color:#ef4444">não percebe</span><br/>
+          <span style="color:#22c55e">está te atrapalhando.</span>
+        </h1>
+
+        <p style="margin-top:24px;color:#6b7f96;font-size:1.05rem;line-height:1.7;max-width:480px">
+          O projeto <strong style="color:#e2eaf4">EduSound</strong> monitora em tempo real o nível de ruído nas salas de aula, revelando como o ambiente acústico impacta diretamente o bem-estar e a cognição dos estudantes do terceirão.
+        </p>
+
+        <div style="display:flex;gap:12px;margin-top:32px;flex-wrap:wrap">
+          <a href="#problema" class="cta-btn">Entender o Problema</a>
+          <a href="resultados.html" class="cta-outline">Ver Resultados →</a>
+        </div>
+
+        <!-- Mini stats row -->
+        <div style="display:flex;gap:24px;margin-top:48px;padding-top:32px;border-top:1px solid #1e2a38;flex-wrap:wrap">
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#22c55e">6</div>
+            <div style="font-size:0.78rem;color:#6b7f96;margin-top:2px">Turmas analisadas</div>
+          </div>
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#eab308">71+</div>
+            <div style="font-size:0.78rem;color:#6b7f96;margin-top:2px">dB registrados</div>
+          </div>
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#ef4444">3×</div>
+            <div style="font-size:0.78rem;color:#6b7f96;margin-top:2px">Acima do ideal</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: LED Prototype Visual -->
+      <div class="fade-in visible" style="transition-delay:0.3s;display:flex;justify-content:center">
+        <div style="position:relative;width:340px;height:420px">
+
+          <!-- Device frame -->
+          <div style="position:absolute;inset:0;background:#0d1117;border:1px solid #1e2a38;border-radius:24px;overflow:hidden">
+            <!-- Top bar -->
+            <div style="padding:16px 20px;border-bottom:1px solid #1e2a38;display:flex;align-items:center;justify-content:space-between">
+              <span style="font-family:'Syne',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.08em;color:#6b7f96;text-transform:uppercase">EduSound v1.0</span>
+              <div style="display:flex;gap:6px">
+                <div style="width:8px;height:8px;border-radius:50%;background:#ef4444;opacity:0.5"></div>
+                <div style="width:8px;height:8px;border-radius:50%;background:#eab308;opacity:0.5"></div>
+                <div style="width:8px;height:8px;border-radius:50%;background:#22c55e"></div>
+              </div>
+            </div>
+
+            <!-- dB display -->
+            <div style="padding:32px 24px 16px;text-align:center">
+              <div style="font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:#6b7f96;margin-bottom:8px;font-family:'Syne',sans-serif">NÍVEL ATUAL</div>
+              <div id="db-display" style="font-family:'Syne',sans-serif;font-size:4.5rem;font-weight:800;color:#22c55e;line-height:1;transition:color 0.4s">48</div>
+              <div style="font-size:1rem;color:#6b7f96;margin-top:4px">decibéis</div>
+
+              <!-- dB meter -->
+              <div style="margin-top:20px">
+                <div class="db-meter-track">
+                  <div id="db-fill" class="db-meter-fill" style="width:40%;background:linear-gradient(90deg,#22c55e,#22c55e)"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:4px">
+                  <span style="font-size:0.65rem;color:#22c55e;font-family:'Syne',sans-serif">0 dB</span>
+                  <span style="font-size:0.65rem;color:#eab308;font-family:'Syne',sans-serif">55</span>
+                  <span style="font-size:0.65rem;color:#eab308;font-family:'Syne',sans-serif">70</span>
+                  <span style="font-size:0.65rem;color:#ef4444;font-family:'Syne',sans-serif">100+ dB</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Traffic light + waveform -->
+            <div style="padding:0 24px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+              <!-- Traffic light -->
+              <div class="traffic-light" id="traffic-light">
+                <div class="tl-light tl-red" id="tl-red"></div>
+                <div class="tl-light tl-yellow" id="tl-yellow"></div>
+                <div class="tl-light tl-green on" id="tl-green"></div>
+              </div>
+
+              <!-- Waveform -->
+              <div style="flex:1">
+                <div class="waveform" style="height:64px;justify-content:center" id="hero-wave">
+                  <!-- bars injected by JS -->
+                </div>
+                <div style="font-size:0.65rem;text-align:center;color:#6b7f96;margin-top:8px;font-family:'Syne',sans-serif;letter-spacing:0.06em;text-transform:uppercase">Sinal ao Vivo</div>
+              </div>
+            </div>
+
+            <!-- Bottom status -->
+            <div style="margin:0 16px 16px;background:#070a0d;border:1px solid #1e2a38;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:8px">
+              <div id="status-dot" style="width:8px;height:8px;border-radius:50%;background:#22c55e;animation:pulse-led 1.8s ease-in-out infinite;flex-shrink:0"></div>
+              <span id="status-text" style="font-size:0.75rem;color:#22c55e;font-family:'Syne',sans-serif;font-weight:600">Nível Ideal — Ambiente Favorável ao Aprendizado</span>
+            </div>
+          </div>
+
+          <!-- Decorative corner accents -->
+          <div style="position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-top:2px solid #22c55e;border-right:2px solid #22c55e;border-radius:0 4px 0 0"></div>
+          <div style="position:absolute;bottom:-8px;left:-8px;width:24px;height:24px;border-bottom:2px solid #22c55e;border-left:2px solid #22c55e;border-radius:0 0 0 4px"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Scroll indicator -->
+  <a href="#problema" style="position:absolute;bottom:32px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;opacity:0.5;transition:opacity 0.2s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5">
+    <span style="font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;font-family:'Syne',sans-serif;color:#6b7f96">Explorar</span>
+    <div style="width:1px;height:32px;background:linear-gradient(#6b7f96,transparent)"></div>
+  </a>
+</section>
+
+<!-- ════════════════════════════ PROBLEMA ════════════════════════════ -->
+<section id="problema" style="padding:120px 0 80px;position:relative">
+  <div class="max-w-7xl mx-auto px-6">
+
+    <!-- Section header -->
+    <div class="fade-in" style="max-width:640px;margin-bottom:72px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div class="section-divider"></div>
+        <span style="font-family:'Syne',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#22c55e">O Problema</span>
+      </div>
+      <h2 style="font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(2rem,4vw,3rem);line-height:1.1;letter-spacing:-0.03em">
+        Salas de aula <span style="color:#ef4444">mais barulhentas</span> do que deveriam.
+      </h2>
+      <p style="margin-top:16px;color:#6b7f96;line-height:1.75;font-size:0.97rem">
+        Pesquisas indicam que o ruído excessivo é um dos principais obstáculos ao aprendizado eficaz — mas raramente é mensurado ou tratado de forma sistemática nas escolas.
+      </p>
+    </div>
+
+    <!-- Big stat + explanation -->
+    <div class="grid lg:grid-cols-3 gap-6 mb-16">
+      <!-- Stat 1 -->
+      <div class="glass-card problem-card accent-red fade-in" style="padding:32px 28px">
+        <div class="big-number" style="color:#ef4444">85%</div>
+        <div style="margin-top:12px;font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:600;color:#e2eaf4">dos alunos relatam dificuldade de concentração</div>
+        <p style="margin-top:8px;color:#6b7f96;font-size:0.85rem;line-height:1.6">em ambientes com ruído acima de 65 dB durante atividades que exigem atenção sustentada.</p>
+        <div style="margin-top:20px">
+          <span class="tag" style="background:#ef44441a;color:#ef4444;border:1px solid #ef444430">Impacto Cognitivo</span>
+        </div>
+      </div>
+
+      <!-- Stat 2 -->
+      <div class="glass-card problem-card accent-yellow fade-in" style="padding:32px 28px;transition-delay:0.1s">
+        <div class="big-number" style="color:#eab308">40–55</div>
+        <div style="margin-top:12px;font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:600;color:#e2eaf4">dB é o nível ideal segundo a OMS</div>
+        <p style="margin-top:8px;color:#6b7f96;font-size:0.85rem;line-height:1.6">para ambientes educacionais. A maioria das salas de aula medidas <strong style="color:#eab308">supera esse limite</strong> com frequência.</p>
+        <div style="margin-top:20px">
+          <span class="tag" style="background:#eab3081a;color:#eab308;border:1px solid #eab30830">Referência OMS</span>
+        </div>
+      </div>
+
+      <!-- Stat 3 -->
+      <div class="glass-card problem-card accent-green fade-in" style="padding:32px 28px;transition-delay:0.2s">
+        <div class="big-number" style="color:#22c55e">−30%</div>
+        <div style="margin-top:12px;font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:600;color:#e2eaf4">de redução na retenção de conteúdo</div>
+        <p style="margin-top:8px;color:#6b7f96;font-size:0.85rem;line-height:1.6">foi observada em estudantes expostos cronicamente a ambientes ruidosos, comparado ao grupo controle.</p>
+        <div style="margin-top:20px">
+          <span class="tag" style="background:#22c55e1a;color:#22c55e;border:1px solid #22c55e30">Dado Pesquisado</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Semáforo explicativo -->
+    <div class="glass-card fade-in" style="padding:40px 36px">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:32px;flex-wrap:wrap">
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:1.2rem">Sistema de Semáforo Acústico</h3>
+        <span class="tag" style="background:#1e2a38;color:#6b7f96">Referência do Protótipo</span>
+      </div>
+      <div class="grid md:grid-cols-3 gap-4">
+        <!-- Verde -->
+        <div style="background:#070a0d;border:1px solid #22c55e30;border-radius:12px;padding:24px;position:relative;overflow:hidden">
+          <div style="position:absolute;top:0;right:0;width:80px;height:80px;background:#22c55e08;border-radius:0 12px 0 80px"></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+            <div style="width:16px;height:16px;border-radius:50%;background:#22c55e;box-shadow:0 0 12px #22c55e80;flex-shrink:0"></div>
+            <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem;color:#22c55e">LED Verde</span>
+          </div>
+          <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:#22c55e">40–55 dB</div>
+          <p style="margin-top:8px;font-size:0.82rem;color:#6b7f96;line-height:1.6">Ambiente silencioso e ideal para o aprendizado. Atenção e memorização plenas.</p>
+        </div>
+        <!-- Amarelo -->
+        <div style="background:#070a0d;border:1px solid #eab30830;border-radius:12px;padding:24px;position:relative;overflow:hidden">
+          <div style="position:absolute;top:0;right:0;width:80px;height:80px;background:#eab30808;border-radius:0 12px 0 80px"></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+            <div style="width:16px;height:16px;border-radius:50%;background:#eab308;box-shadow:0 0 12px #eab30880;flex-shrink:0"></div>
+            <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem;color:#eab308">LED Amarelo</span>
+          </div>
+          <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:#eab308">56–70 dB</div>
+          <p style="margin-top:8px;font-size:0.82rem;color:#6b7f96;line-height:1.6">Atenção requerida. Ruído moderado começa a interferir na concentração dos alunos.</p>
+        </div>
+        <!-- Vermelho -->
+        <div style="background:#070a0d;border:1px solid #ef444430;border-radius:12px;padding:24px;position:relative;overflow:hidden">
+          <div style="position:absolute;top:0;right:0;width:80px;height:80px;background:#ef444408;border-radius:0 12px 0 80px"></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+            <div style="width:16px;height:16px;border-radius:50%;background:#ef4444;box-shadow:0 0 12px #ef444480;flex-shrink:0"></div>
+            <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem;color:#ef4444">LED Vermelho</span>
+          </div>
+          <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:#ef4444">71+ dB</div>
+          <p style="margin-top:8px;font-size:0.82rem;color:#6b7f96;line-height:1.6">Nível crítico. Ruído excessivo prejudica significativamente o desempenho cognitivo.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Narrative block -->
+    <div class="grid lg:grid-cols-2 gap-10 mt-12">
+      <div class="fade-in">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div class="section-divider"></div>
+          <span style="font-family:'Syne',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6b7f96">Contexto</span>
+        </div>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:1.25rem;line-height:1.3;margin-bottom:16px">Por que o terceirão?</h3>
+        <p style="color:#6b7f96;line-height:1.8;font-size:0.92rem">
+          Os alunos do último ano do ensino médio enfrentam uma das fases mais críticas de seus percursos — com maior demanda cognitiva, pressão psicológica e necessidade de concentração. Um ambiente acústico inadequado potencializa o estresse e reduz a eficiência nos estudos.
+        </p>
+        <p style="color:#6b7f96;line-height:1.8;font-size:0.92rem;margin-top:12px">
+          O projeto acompanhou 6 turmas distintas — <strong style="color:#e2eaf4">CID, CONT, INFO, RH, MKT e AI</strong> — durante semanas de coleta de dados, mapeando os picos de ruído e seu contexto.
+        </p>
+      </div>
+
+      <div class="fade-in" style="transition-delay:0.1s">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div class="section-divider"></div>
+          <span style="font-family:'Syne',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#6b7f96">Nossa Abordagem</span>
+        </div>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:1.25rem;line-height:1.3;margin-bottom:16px">Medição objetiva e feedback imediato</h3>
+        <p style="color:#6b7f96;line-height:1.8;font-size:0.92rem">
+          Diferente de estudos puramente questionários, o EduSound utiliza um protótipo físico com <strong style="color:#22c55e">ESP32 + sensor de som</strong> para capturar dados em tempo real. O LED RGB fornece feedback visual instantâneo — sem precisar interromper a aula.
+        </p>
+        <div style="margin-top:24px;display:flex;gap:10px;flex-wrap:wrap">
+          <span class="chip">ESP32</span>
+          <span class="chip">Sensor de Som</span>
+          <span class="chip">LED RGB</span>
+          <span class="chip">Arduino IDE</span>
+          <span class="chip">Power BI</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA Banner -->
+    <div class="fade-in" style="margin-top:64px;background:linear-gradient(135deg,#0d1117,#111820);border:1px solid #1e2a38;border-radius:16px;padding:40px 36px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;position:relative;overflow:hidden">
+      <div style="position:absolute;right:-60px;top:-60px;width:200px;height:200px;background:#22c55e;border-radius:50%;filter:blur(80px);opacity:0.06"></div>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#22c55e;margin-bottom:8px">Próximo passo</div>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.4rem;color:#e2eaf4">Conheça o protótipo que coletou esses dados</h3>
+        <p style="margin-top:6px;color:#6b7f96;font-size:0.88rem">ESP32, circuito, código e toda a arquitetura do sensor acústico.</p>
+      </div>
+      <a href="tecnologia.html" class="cta-btn" style="flex-shrink:0">Ver Tecnologia →</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════════════ FOOTER ════════════════════════════ -->
+<footer style="border-top:1px solid #1e2a38;padding:40px 0;margin-top:40px">
+  <div class="max-w-7xl mx-auto px-6 flex flex-wrap items-center justify-between gap-6">
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:#e2eaf4">Edu<span style="color:#22c55e">Sound</span></div>
+      <div style="font-size:0.75rem;color:#6b7f96;margin-top:4px">Emanuelly · Julia · Nikolas B.</div>
+    </div>
+    <div style="font-size:0.75rem;color:#6b7f96">Projeto Acadêmico — Monitoramento Acústico Escolar</div>
+    <div style="display:flex;gap:16px">
+      <a href="tecnologia.html" style="font-size:0.75rem;color:#6b7f96;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='#22c55e'" onmouseout="this.style.color='#6b7f96'">Tecnologia</a>
+      <a href="resultados.html" style="font-size:0.75rem;color:#6b7f96;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='#22c55e'" onmouseout="this.style.color='#6b7f96'">Resultados</a>
+      <a href="equipe.html" style="font-size:0.75rem;color:#6b7f96;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='#22c55e'" onmouseout="this.style.color='#6b7f96'">Equipe</a>
+    </div>
+  </div>
+</footer>
+
+<!-- ════════════════════════════ SCRIPTS ════════════════════════════ -->
+<script>
+  // ─── Waveform bars init ───
+  const heroWave = document.getElementById('hero-wave');
+  const barCount = 22;
+  const barColors = ['#22c55e','#22c55e','#22c55e','#eab308','#22c55e','#22c55e','#eab308','#22c55e','#22c55e'];
+  for (let i = 0; i < barCount; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'wave-bar';
+    const dur = (0.5 + Math.random() * 0.9).toFixed(2) + 's';
+    const delay = (Math.random() * 0.5).toFixed(2) + 's';
+    bar.style.cssText = `background:${barColors[i % barColors.length]};height:64px;--dur:${dur};animation-delay:${delay};opacity:${0.5 + Math.random() * 0.5}`;
+    heroWave.appendChild(bar);
+  }
+
+  // ─── LED Simulator ───
+  const dbLevels = [
+    { val: 48, color: '#22c55e', pct: '40%', light: 'green', label: 'Nível Ideal — Ambiente Favorável ao Aprendizado' },
+    { val: 62, color: '#eab308', pct: '60%', light: 'yellow', label: 'Atenção — Ruído Moderado Detectado' },
+    { val: 79, color: '#ef4444', pct: '82%', light: 'red',   label: 'Crítico — Ruído Excessivo! Acima de 71 dB' },
+    { val: 44, color: '#22c55e', pct: '33%', light: 'green', label: 'Nível Ideal — Ambiente Favorável ao Aprendizado' },
+    { val: 55, color: '#22c55e', pct: '45%', light: 'green', label: 'Nível Ideal — Limite Superior Seguro' },
+    { val: 68, color: '#eab308', pct: '67%', light: 'yellow', label: 'Atenção — Ruído Moderado Detectado' },
+  ];
+  let lIdx = 0;
+
+  function updateLED() {
+    const d = dbLevels[lIdx % dbLevels.length]; lIdx++;
+    const dbEl = document.getElementById('db-display');
+    const fill  = document.getElementById('db-fill');
+    const statusDot  = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const tlR = document.getElementById('tl-red');
+    const tlY = document.getElementById('tl-yellow');
+    const tlG = document.getElementById('tl-green');
+
+    // Counter animation
+    let start = parseInt(dbEl.textContent);
+    const end = d.val; const steps = 20;
+    let s = 0;
+    const tick = setInterval(() => {
+      s++;
+      dbEl.textContent = Math.round(start + (end - start) * (s / steps));
+      if (s >= steps) clearInterval(tick);
+    }, 40);
+
+    dbEl.style.color = d.color;
+    fill.style.width = d.pct;
+    fill.style.background = `linear-gradient(90deg, ${d.color}88, ${d.color})`;
+
+    statusDot.style.background = d.color;
+    statusText.style.color = d.color;
+    statusText.textContent = d.label;
+
+    // Update waveform colors
+    heroWave.querySelectorAll('.wave-bar').forEach((b, i) => {
+      b.style.background = i % 3 === 0 ? d.color : (d.color === '#ef4444' ? '#ef444466' : d.color === '#eab308' ? '#eab30866' : '#22c55e66');
+    });
+
+    // Traffic light
+    tlR.classList.remove('on'); tlY.classList.remove('on'); tlG.classList.remove('on');
+    if (d.light === 'red')    tlR.classList.add('on');
+    if (d.light === 'yellow') tlY.classList.add('on');
+    if (d.light === 'green')  tlG.classList.add('on');
+  }
+
+  setInterval(updateLED, 3200);
+
+  // ─── Scroll fade-in ───
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduSound — Resultados</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'es-black': '#070a0d',
+            'es-surface': '#0d1117',
+            'es-card': '#111820',
+            'es-border': '#1e2a38',
+            'es-green': '#22c55e',
+            'es-yellow': '#eab308',
+            'es-red': '#ef4444',
+            'es-text': '#e2eaf4',
+            'es-muted': '#6b7f96',
+          },
+          fontFamily: {
+            display: ['Syne', 'sans-serif'],
+            body: ['DM Sans', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background-color: #070a0d;
+      color: #e2eaf4;
+      font-family: 'DM Sans', sans-serif;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      opacity: 0.02;
+      pointer-events: none;
+      z-index: 999;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #070a0d; }
+    ::-webkit-scrollbar-thumb { background: #1e2a38; border-radius: 2px; }
+
+    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(7,10,13,0.85); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(30,42,56,0.6); }
+    .nav-link { font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; letter-spacing: 0.04em; color: #6b7f96; transition: color 0.2s; text-transform: uppercase; text-decoration: none; }
+    .nav-link:hover { color: #22c55e; }
+    .nav-active { color: #e2eaf4 !important; }
+
+    .glass-card { background: rgba(17,24,32,0.95); border: 1px solid #1e2a38; border-radius: 16px; backdrop-filter: blur(8px); transition: border-color 0.3s, transform 0.3s; }
+    .glass-card:hover { border-color: #22c55e33; transform: translateY(-4px); }
+
+    .fade-in { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+    
+    .led-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #22c55e; margin-right: 6px; box-shadow: 0 0 8px #22c55e; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
+    <a href="index.html" class="flex items-center gap-2" style="text-decoration:none">
+      <div class="waveform flex items-center gap-[3px] h-[22px]">
+        <div style="width:4px;height:22px;background:#22c55e;border-radius:2px"></div>
+        <div style="width:4px;height:22px;background:#22c55e;border-radius:2px"></div>
+        <div style="width:4px;height:22px;background:#eab308;border-radius:2px"></div>
+        <div style="width:4px;height:22px;background:#ef4444;border-radius:2px"></div>
+      </div>
+      <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:#e2eaf4;letter-spacing:-0.02em">Edu<span style="color:#22c55e">Sound</span></span>
+    </a>
+    <div class="hidden md:flex items-center gap-8">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="tecnologia.html" class="nav-link">Tecnologia</a>
+      <a href="resultados.html" class="nav-link nav-active">Resultados</a>
+      <a href="equipe.html" class="nav-link">Equipe</a>
+    </div>
+    <div class="led-badge flex items-center" style="color:#eab308;font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em">
+      <span class="led-dot" style="background-color: #eab308; box-shadow: 0 0 8px #eab308;"></span>
+      Ambiente de Testes
+    </div>
+  </div>
+</nav>
+
+<main style="padding-top:88px;">
+  <section class="max-w-7xl mx-auto px-6 py-12">
+    <div class="fade-in">
+      <div class="flex items-center gap-3 mb-4">
+        <div style="width:48px;height:3px;border-radius:2px;background:linear-gradient(90deg,#eab308,#eab30800)"></div>
+        <span style="font-family:'Syne',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#eab308">Simulação de Dados</span>
+      </div>
+      <h1 style="font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(1.8rem,4vw,2.6rem);line-height:1.05;color:#e2eaf4">Análise de Dados e Dashboard</h1>
+      <p style="margin-top:12px;color:#6b7f96;max-width:760px">As métricas apresentadas abaixo refletem a estrutura de modelagem de dados preparada para o sistema. Atualmente, o painel opera com <strong>dados fictícios de calibração</strong> para validar a arquitetura antes da coleta definitiva no terceirão.</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-10">
+      <div class="glass-card p-6 fade-in">
+        <div class="text-xs font-semibold text-es-muted tracking-wider uppercase font-display">Teto Alvo de Calibração</div>
+        <div class="text-3xl font-extrabold text-es-red mt-2 font-display">82.4 dB</div>
+        <div class="text-xs text-es-muted mt-1">Limite crítico parametrizado no código</div>
+      </div>
+      <div class="glass-card p-6 fade-in">
+        <div class="text-xs font-semibold text-es-muted tracking-wider uppercase font-display">Média Base Projetada</div>
+        <div class="text-3xl font-extrabold text-es-yellow mt-2 font-display">64.1 dB</div>
+        <div class="text-xs text-es-muted mt-1">Ruído médio estimado em salas convencionais</div>
+      </div>
+      <div class="glass-card p-6 fade-in">
+        <div class="text-xs font-semibold text-es-muted tracking-wider uppercase font-display">Modelo Referência</div>
+        <div class="text-3xl font-extrabold text-es-green mt-2 font-display">INFO</div>
+        <div class="text-xs text-es-muted mt-1">Configuração padrão de sala controlada</div>
+      </div>
+    </div>
+
+    <div class="mt-10 fade-in">
+      <div class="glass-card p-4 shadow-2xl relative" style="background: #0f141c;">
+        <div class="flex items-center justify-between mb-4 px-2">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full bg-es-yellow"></div>
+            <span class="text-sm font-semibold tracking-wide font-display text-slate-300">EDUSOUND_powerBI.pbix (Protótipo Visual)</span>
+          </div>
+          <span class="text-xs text-es-muted hidden sm:inline">Modo de Validação Técnico</span>
+        </div>
+        
+        <div class="w-full h-[550px] rounded-xl bg-es-black overflow-hidden border border-es-border/50 flex flex-col items-center justify-center relative p-6 text-center">
+          <svg class="w-16 h-16 text-es-muted/40 mb-4" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z"></path></svg>
+          <h3 class="font-display font-bold text-lg text-slate-300 mb-1">Painel de Integração de Dados</h3>
+          <p class="text-xs text-es-muted max-w-sm mb-4">Esta janela receberá o dashboard do Power BI. Os gráficos usarão as planilhas do <code>Dados.xlsx</code> para exibir as médias por horário, picos por turma e curvas históricas.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-12 fade-in">
+      <h2 class="font-display font-bold text-xl text-slate-200 mb-4">Mapeamento e Perfis Esperados (Modelagem)</h2>
+      <div class="glass-card overflow-hidden border border-es-border">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-bottom border-es-border" style="background: rgba(25, 35, 48, 0.2);">
+                <th class="p-4 text-xs font-bold text-es-muted uppercase tracking-wider font-display">Turma Alvo</th>
+                <th class="p-4 text-xs font-bold text-es-muted uppercase tracking-wider font-display">Hipótese de Perfil Acústico</th>
+                <th class="p-4 text-xs font-bold text-es-muted uppercase tracking-wider font-display">Projeção de Picos</th>
+                <th class="p-4 text-xs font-bold text-es-muted uppercase tracking-wider font-display">Zoneamento do LED</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-es-border/40 text-sm text-slate-300">
+              <tr>
+                <td class="p-4 font-bold font-display">INFO</td>
+                <td class="p-4">Perfil teórico mais estável devido ao uso focado de computadores.</td>
+                <td class="p-4 text-es-green">Mínimo</td>
+                <td class="p-4"><span class="px-2.5 py-1 text-xs font-bold rounded-full border border-es-green/20 bg-es-green/10 text-es-green">VERDE (40-55 dB)</span></td>
+              </tr>
+              <tr>
+                <td class="p-4 font-bold font-display">CID</td>
+                <td class="p-4">Tendência a oscilações moderadas em discussões de grupo.</td>
+                <td class="p-4 text-es-yellow">Moderado</td>
+                <td class="p-4"><span class="px-2.5 py-1 text-xs font-bold rounded-full border border-es-yellow/20 bg-es-yellow/10 text-es-yellow">AMARELO (56-70 dB)</span></td>
+              </tr>
+              <tr>
+                <td class="p-4 font-bold font-display">CONT</td>
+                <td class="p-4">Nível médio linear com picos rápidos em trocas de dinâmicas.</td>
+                <td class="p-4 text-es-yellow">Moderado</td>
+                <td class="p-4"><span class="px-2.5 py-1 text-xs font-full rounded-full border border-es-yellow/20 bg-es-yellow/10 text-es-yellow">AMARELO (56-70 dB)</span></td>
+              </tr>
+              <tr>
+                <td class="p-4 font-bold font-display">RH</td>
+                <td class="p-4">Variações recorrentes ligadas a atividades práticas e apresentações.</td>
+                <td class="p-4 text-es-yellow">Intermediário</td>
+                <td class="p-4"><span class="px-2.5 py-1 text-xs font-bold rounded-full border border-es-yellow/20 bg-es-yellow/10 text-es-yellow">AMARELO (56-70 dB)</span></td>
+              </tr>
+              <tr>
+                <td class="p-4 font-bold font-display">MKT</td>
+                <td class="p-4">Suspeita de picos elevados causados por dinâmicas intensas e debates.</td>
+                <td class="p-4 text-es-red">Frequente</td>
+                <td class="p-4"><span class="px-2.5 py-1 text-xs font-bold rounded-full border border-es-red/20 bg-es-red/10 text-es-red">VERMELHO (71+ dB)</span></td>
+              </tr>
+              <tr>
+                <td class="p-4 font-bold font-display">AI</td>
+                <td class="p-4">Evolução acústica imprevisível com picos pontuais agudos.</td>
+                <td class="p-4 text-es-red">Elevado</td>
+                <td class="p-4"><span class="px-2.5 py-1 text-xs font-bold rounded-full border border-es-red/20 bg-es-red/10 text-es-red">VERMELHO (71+ dB)</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer style="border-top:1px solid #1e2a38;padding:40px 0;margin-top:60px">
+  <div class="max-w-7xl mx-auto px-6 flex flex-wrap items-center justify-between gap-6">
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:#e2eaf4">Edu<span style="color:#22c55e">Sound</span></div>
+      <div style="font-size:0.75rem;color:#6b7f96;margin-top:4px">Emanuelly · Julia · Nikolas B.</div>
+    </div>
+    <div style="font-size:0.75rem;color:#6b7f96">Projeto Acadêmico — Monitoramento Acústico Escolar</div>
+    <div style="display:flex;gap:16px">
+      <a href="tecnologia.html" style="font-size:0.75rem;color:#6b7f96;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='#22c55e'" onmouseout="this.style.color='#6b7f96'">Tecnologia</a>
+      <a href="resultados.html" style="font-size:0.75rem;color:#6b7f96;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='#22c55e'" onmouseout="this.style.color='#6b7f96'">Resultados</a>
+      <a href="equipe.html" style="font-size:0.75rem;color:#6b7f96;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='#22c55e'" onmouseout="this.style.color='#6b7f96'">Equipe</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
